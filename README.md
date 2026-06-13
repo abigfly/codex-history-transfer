@@ -21,11 +21,11 @@ Implemented:
 - `export`: export one thread to a zip package
 - `import`: import a package, patch metadata, and back up DB files first
 - `verify`: compare SQLite and JSONL metadata for a thread
+- desktop GUI: select conversations, export packages, inspect packages, dry-run import, then import
 
 Not implemented yet:
 
 - full multi-thread export
-- GUI
 - cloud sync
 - automatic conflict merging
 - redaction of private data before sharing
@@ -36,6 +36,32 @@ Not implemented yet:
 - Local Codex Desktop data in `%USERPROFILE%\.codex`
 
 No third-party Python packages are required.
+
+## Desktop GUI
+
+Launch the GUI from the project folder:
+
+```powershell
+cd D:\Agent\codex-history-transfer
+python .\codex_history_transfer_gui.py
+```
+
+On Windows, you can also double-click:
+
+```text
+run_gui.bat
+```
+
+The GUI has two tabs:
+
+- Export: search local Codex conversations, select one, choose whether to include workspace files, then create a zip package.
+- Import: open a transfer zip, inspect its manifest and package entries, run a dry-run, then import after confirmation.
+
+After editable install, you can also run:
+
+```powershell
+codex-history-transfer-gui
+```
 
 ## Quick Start
 

@@ -24,6 +24,7 @@ classifiers = [
 
 [project.scripts]
 codex-history-transfer = "codex_history_transfer:main"
+codex-history-transfer-gui = "codex_history_transfer_gui:main"
 
 [tool.setuptools]
-py-modules = ["codex_history_transfer"]
+py-modules = ["codex_history_transfer", "codex_history_transfer_gui"]
