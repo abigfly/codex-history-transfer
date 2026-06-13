@@ -22,6 +22,7 @@ from typing import Any
 
 
 APP_NAME = "codex-history-transfer"
+__version__ = "1.0.1"
 MANIFEST_SCHEMA = "codex-history-transfer"
 MANIFEST_VERSION = 1
 
@@ -665,6 +666,7 @@ def build_parser() -> argparse.ArgumentParser:
         prog=APP_NAME,
         description="Export and import local Codex Desktop history packages.",
     )
+    parser.add_argument("--version", action="version", version=f"{APP_NAME} {__version__}")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     common = argparse.ArgumentParser(add_help=False)

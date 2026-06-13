@@ -2,6 +2,8 @@
 
 `codex-history-transfer` is a small offline tool for moving local Codex Desktop conversations between computers.
 
+Current version: `1.0.1`.
+
 It packages one Codex thread as a zip file, then imports it on another machine by restoring:
 
 - the rollout JSONL under `.codex/sessions`
@@ -36,6 +38,28 @@ Not implemented yet:
 - Local Codex Desktop data in `%USERPROFILE%\.codex`
 
 No third-party Python packages are required.
+
+## Windows Release
+
+For Windows users who do not want to run from source, download the latest `codex-history-transfer-1.0.1-windows.zip` from:
+
+```text
+https://github.com/abigfly/codex-history-transfer/releases
+```
+
+Unzip it, then run:
+
+```text
+codex-history-transfer-gui.exe
+```
+
+The portable release also includes a CLI executable:
+
+```powershell
+.\codex-history-transfer.exe list --limit 10
+```
+
+This is a portable package, not a system-wide installer. Unzip it anywhere and run the GUI executable.
 
 ## Desktop GUI
 

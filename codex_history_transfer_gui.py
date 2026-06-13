@@ -20,6 +20,16 @@ import codex_history_transfer as cht
 
 THREAD_COLUMNS = ("updated", "provider", "title", "cwd", "id")
 PACKAGE_COLUMNS = ("path", "size")
+BG = "#f5f7fb"
+SURFACE = "#ffffff"
+SURFACE_ALT = "#eef4ff"
+BORDER = "#d9e2f1"
+TEXT = "#162033"
+MUTED = "#617089"
+ACCENT = "#2563eb"
+ACCENT_DARK = "#1d4ed8"
+SUCCESS = "#0f766e"
+WARNING = "#b45309"
 
 
 def list_threads(codex_home: Path, query: str, limit: int, include_archived: bool) -> list[dict[str, Any]]:
@@ -92,9 +102,10 @@ def package_summary(package: Path) -> dict[str, Any]:
 class CodexHistoryTransferApp(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
-        self.title("codex-history-transfer")
-        self.geometry("1180x760")
-        self.minsize(980, 620)
+        self.title(f"codex-history-transfer {cht.__version__}")
+        self.geometry("1240x820")
+        self.minsize(1040, 680)
+        self.configure(bg=BG)
 
         self.task_queue: queue.Queue[tuple[str, str, str | None]] = queue.Queue()
         self.threads: dict[str, dict[str, Any]] = {}
@@ -114,6 +125,9 @@ class CodexHistoryTransferApp(tk.Tk):
         self.target_cwd_var = tk.StringVar()
         self.workspace_root_var = tk.StringVar()
         self.overwrite_var = tk.BooleanVar(value=False)
+        self.status_var = tk.StringVar(value="Ready")
+        self.export_summary_var = tk.StringVar(value="Select a Codex conversation, then export a transfer zip.")
+        self.import_summary_var = tk.StringVar(value="Open a transfer zip to inspect it before importing.")
 
         self._build_ui()
         self.after(100, self.refresh_threads)
@@ -123,39 +137,88 @@ class CodexHistoryTransferApp(tk.Tk):
         style = ttk.Style(self)
         if "vista" in style.theme_names():
             style.theme_use("vista")
+        self._configure_styles(style)
 
-        top = ttk.Frame(self, padding=(12, 10, 12, 6))
+        header = ttk.Frame(self, style="Hero.TFrame", padding=(18, 16, 18, 14))
+        header.pack(fill="x")
+        title_box = ttk.Frame(header, style="Hero.TFrame")
+        title_box.pack(side="left", fill="x", expand=True)
+        ttk.Label(title_box, text="codex-history-transfer", style="HeroTitle.TLabel").pack(anchor="w")
+        ttk.Label(
+            title_box,
+            text=f"Version {cht.__version__} · Offline Windows transfer for Codex Desktop history",
+            style="HeroSubtitle.TLabel",
+        ).pack(anchor="w", pady=(3, 0))
+        ttk.Label(header, text="Local only", style="Pill.TLabel").pack(side="right")
+
+        top = ttk.Frame(self, padding=(14, 12, 14, 8), style="App.TFrame")
         top.pack(fill="x")
-        ttk.Label(top, text="Codex home").pack(side="left")
-        ttk.Entry(top, textvariable=self.codex_home_var).pack(side="left", fill="x", expand=True, padx=(8, 6))
-        ttk.Button(top, text="Browse", command=self.browse_codex_home).pack(side="left")
+        ttk.Label(top, text="Codex home", style="FieldLabel.TLabel").pack(side="left")
+        ttk.Entry(top, textvariable=self.codex_home_var, style="App.TEntry").pack(side="left", fill="x", expand=True, padx=(10, 8))
+        ttk.Button(top, text="Browse", command=self.browse_codex_home, style="Secondary.TButton").pack(side="left")
 
         self.notebook = ttk.Notebook(self)
-        self.notebook.pack(fill="both", expand=True, padx=12, pady=(0, 12))
+        self.notebook.pack(fill="both", expand=True, padx=14, pady=(0, 10))
         self.export_tab = ttk.Frame(self.notebook)
         self.import_tab = ttk.Frame(self.notebook)
-        self.notebook.add(self.export_tab, text="Export")
-        self.notebook.add(self.import_tab, text="Import")
+        self.notebook.add(self.export_tab, text=" Export ")
+        self.notebook.add(self.import_tab, text=" Import ")
         self._build_export_tab()
         self._build_import_tab()
 
+        status = ttk.Frame(self, padding=(14, 0, 14, 10), style="App.TFrame")
+        status.pack(fill="x")
+        ttk.Label(status, textvariable=self.status_var, style="Status.TLabel").pack(side="left")
+
+    def _configure_styles(self, style: ttk.Style) -> None:
+        default_font = ("Segoe UI", 10)
+        self.option_add("*Font", default_font)
+        self.option_add("*Text.Font", ("Segoe UI", 10))
+
+        style.configure("App.TFrame", background=BG)
+        style.configure("Card.TFrame", background=SURFACE, relief="solid", borderwidth=1)
+        style.configure("Hero.TFrame", background="#111827")
+        style.configure("HeroTitle.TLabel", background="#111827", foreground="#ffffff", font=("Segoe UI Semibold", 18))
+        style.configure("HeroSubtitle.TLabel", background="#111827", foreground="#cbd5e1", font=("Segoe UI", 10))
+        style.configure("Pill.TLabel", background="#dbeafe", foreground=ACCENT_DARK, padding=(12, 6), font=("Segoe UI Semibold", 9))
+        style.configure("FieldLabel.TLabel", background=BG, foreground=MUTED, font=("Segoe UI Semibold", 9))
+        style.configure("CardTitle.TLabel", background=SURFACE, foreground=TEXT, font=("Segoe UI Semibold", 12))
+        style.configure("CardText.TLabel", background=SURFACE, foreground=MUTED, font=("Segoe UI", 10))
+        style.configure("Summary.TLabel", background=SURFACE_ALT, foreground=TEXT, padding=(12, 8), font=("Segoe UI", 10))
+        style.configure("Status.TLabel", background=BG, foreground=MUTED, font=("Segoe UI", 9))
+        style.configure("TNotebook", background=BG, borderwidth=0)
+        style.configure("TNotebook.Tab", padding=(18, 9), font=("Segoe UI Semibold", 10))
+        style.configure("Treeview", rowheight=29, font=("Segoe UI", 9), borderwidth=0)
+        style.configure("Treeview.Heading", font=("Segoe UI Semibold", 9), foreground=TEXT)
+        style.configure("Primary.TButton", padding=(14, 7), font=("Segoe UI Semibold", 10))
+        style.configure("Secondary.TButton", padding=(12, 6), font=("Segoe UI", 10))
+        style.map("Primary.TButton", foreground=[("active", "#ffffff")])
+
     def _build_export_tab(self) -> None:
-        controls = ttk.Frame(self.export_tab, padding=(0, 10, 0, 8))
+        self.export_tab.configure(style="App.TFrame")
+        intro = ttk.Frame(self.export_tab, padding=(12, 12, 12, 8), style="App.TFrame")
+        intro.pack(fill="x")
+        card = ttk.Frame(intro, style="Card.TFrame", padding=(14, 12, 14, 12))
+        card.pack(fill="x")
+        ttk.Label(card, text="Export conversations", style="CardTitle.TLabel").pack(anchor="w")
+        ttk.Label(card, textvariable=self.export_summary_var, style="Summary.TLabel").pack(fill="x", pady=(8, 0))
+
+        controls = ttk.Frame(self.export_tab, padding=(12, 4, 12, 8), style="App.TFrame")
         controls.pack(fill="x")
-        ttk.Label(controls, text="Search").pack(side="left")
+        ttk.Label(controls, text="Search", style="FieldLabel.TLabel").pack(side="left")
         search = ttk.Entry(controls, textvariable=self.search_var, width=32)
         search.pack(side="left", padx=(8, 8))
         search.bind("<Return>", lambda _event: self.refresh_threads())
-        ttk.Label(controls, text="Limit").pack(side="left")
+        ttk.Label(controls, text="Limit", style="FieldLabel.TLabel").pack(side="left")
         ttk.Spinbox(controls, from_=10, to=500, textvariable=self.limit_var, width=6).pack(side="left", padx=(8, 8))
         ttk.Checkbutton(controls, text="Archived", variable=self.include_archived_var).pack(side="left", padx=(0, 8))
-        ttk.Button(controls, text="Refresh", command=self.refresh_threads).pack(side="left")
-        ttk.Button(controls, text="Verify selected", command=self.verify_selected_thread).pack(side="right")
+        ttk.Button(controls, text="Refresh", command=self.refresh_threads, style="Secondary.TButton").pack(side="left")
+        ttk.Button(controls, text="Verify selected", command=self.verify_selected_thread, style="Secondary.TButton").pack(side="right")
 
         body = ttk.PanedWindow(self.export_tab, orient="vertical")
-        body.pack(fill="both", expand=True)
+        body.pack(fill="both", expand=True, padx=12)
 
-        table_frame = ttk.Frame(body)
+        table_frame = ttk.Frame(body, style="Card.TFrame", padding=(8, 8, 8, 8))
         self.thread_tree = ttk.Treeview(table_frame, columns=THREAD_COLUMNS, show="headings", selectmode="browse")
         self.thread_tree.heading("updated", text="Updated")
         self.thread_tree.heading("provider", text="Provider")
@@ -171,45 +234,55 @@ class CodexHistoryTransferApp(tk.Tk):
         scroll = ttk.Scrollbar(table_frame, orient="vertical", command=self.thread_tree.yview)
         scroll.pack(side="right", fill="y")
         self.thread_tree.configure(yscrollcommand=scroll.set)
+        self.thread_tree.tag_configure("odd", background="#f8fafc")
+        self.thread_tree.tag_configure("even", background="#ffffff")
         self.thread_tree.bind("<<TreeviewSelect>>", self.on_thread_select)
         body.add(table_frame, weight=3)
 
-        details = ttk.Frame(body, padding=(0, 10, 0, 0))
-        self.thread_details = tk.Text(details, height=8, wrap="word")
+        details = ttk.Frame(body, style="Card.TFrame", padding=(8, 8, 8, 8))
+        self.thread_details = tk.Text(details, height=8, wrap="word", bg=SURFACE, fg=TEXT, relief="flat", padx=10, pady=8)
         self.thread_details.pack(fill="both", expand=True)
         self.thread_details.configure(state="disabled")
         body.add(details, weight=1)
 
-        export_bar = ttk.Frame(self.export_tab, padding=(0, 10, 0, 0))
+        export_bar = ttk.Frame(self.export_tab, padding=(12, 10, 12, 0), style="App.TFrame")
         export_bar.pack(fill="x")
         ttk.Checkbutton(export_bar, text="Include workspace files", variable=self.include_workspace_var).pack(side="left")
         ttk.Entry(export_bar, textvariable=self.export_path_var).pack(side="left", fill="x", expand=True, padx=8)
-        ttk.Button(export_bar, text="Save as", command=self.browse_export_path).pack(side="left", padx=(0, 8))
-        ttk.Button(export_bar, text="Export zip", command=self.export_selected_thread).pack(side="left")
+        ttk.Button(export_bar, text="Save as", command=self.browse_export_path, style="Secondary.TButton").pack(side="left", padx=(0, 8))
+        ttk.Button(export_bar, text="Export zip", command=self.export_selected_thread, style="Primary.TButton").pack(side="left")
 
-        self.export_log = tk.Text(self.export_tab, height=7, wrap="word")
-        self.export_log.pack(fill="x", pady=(10, 0))
+        self.export_log = tk.Text(self.export_tab, height=6, wrap="word", bg="#0f172a", fg="#dbeafe", insertbackground="#dbeafe", relief="flat", padx=10, pady=8)
+        self.export_log.pack(fill="x", padx=12, pady=(10, 10))
         self.export_log.configure(state="disabled")
 
     def _build_import_tab(self) -> None:
-        package_bar = ttk.Frame(self.import_tab, padding=(0, 10, 0, 8))
+        self.import_tab.configure(style="App.TFrame")
+        intro = ttk.Frame(self.import_tab, padding=(12, 12, 12, 8), style="App.TFrame")
+        intro.pack(fill="x")
+        card = ttk.Frame(intro, style="Card.TFrame", padding=(14, 12, 14, 12))
+        card.pack(fill="x")
+        ttk.Label(card, text="Import transfer package", style="CardTitle.TLabel").pack(anchor="w")
+        ttk.Label(card, textvariable=self.import_summary_var, style="Summary.TLabel").pack(fill="x", pady=(8, 0))
+
+        package_bar = ttk.Frame(self.import_tab, padding=(12, 4, 12, 8), style="App.TFrame")
         package_bar.pack(fill="x")
-        ttk.Label(package_bar, text="Package").pack(side="left")
+        ttk.Label(package_bar, text="Package", style="FieldLabel.TLabel").pack(side="left")
         ttk.Entry(package_bar, textvariable=self.import_package_var).pack(side="left", fill="x", expand=True, padx=8)
-        ttk.Button(package_bar, text="Open zip", command=self.browse_import_package).pack(side="left")
+        ttk.Button(package_bar, text="Open zip", command=self.browse_import_package, style="Primary.TButton").pack(side="left")
 
         body = ttk.PanedWindow(self.import_tab, orient="vertical")
-        body.pack(fill="both", expand=True)
+        body.pack(fill="both", expand=True, padx=12)
 
-        info_frame = ttk.Frame(body)
-        self.package_info = tk.Text(info_frame, height=9, wrap="word")
+        info_frame = ttk.Frame(body, style="Card.TFrame", padding=(8, 8, 8, 8))
+        self.package_info = tk.Text(info_frame, height=9, wrap="word", bg=SURFACE, fg=TEXT, relief="flat", padx=10, pady=8)
         self.package_info.pack(side="left", fill="both", expand=True)
         info_scroll = ttk.Scrollbar(info_frame, orient="vertical", command=self.package_info.yview)
         info_scroll.pack(side="right", fill="y")
         self.package_info.configure(yscrollcommand=info_scroll.set, state="disabled")
         body.add(info_frame, weight=1)
 
-        entries_frame = ttk.Frame(body)
+        entries_frame = ttk.Frame(body, style="Card.TFrame", padding=(8, 8, 8, 8))
         self.package_tree = ttk.Treeview(entries_frame, columns=PACKAGE_COLUMNS, show="headings")
         self.package_tree.heading("path", text="Package entry")
         self.package_tree.heading("size", text="Size")
@@ -219,10 +292,12 @@ class CodexHistoryTransferApp(tk.Tk):
         entry_scroll = ttk.Scrollbar(entries_frame, orient="vertical", command=self.package_tree.yview)
         entry_scroll.pack(side="right", fill="y")
         self.package_tree.configure(yscrollcommand=entry_scroll.set)
+        self.package_tree.tag_configure("odd", background="#f8fafc")
+        self.package_tree.tag_configure("even", background="#ffffff")
         body.add(entries_frame, weight=2)
 
-        options = ttk.LabelFrame(self.import_tab, text="Import options", padding=(10, 8, 10, 8))
-        options.pack(fill="x", pady=(10, 0))
+        options = ttk.LabelFrame(self.import_tab, text="Import options", padding=(12, 10, 12, 10))
+        options.pack(fill="x", padx=12, pady=(10, 0))
 
         row1 = ttk.Frame(options)
         row1.pack(fill="x", pady=(0, 8))
@@ -235,18 +310,18 @@ class CodexHistoryTransferApp(tk.Tk):
         row2.pack(fill="x", pady=(0, 8))
         ttk.Label(row2, text="Target cwd").pack(side="left")
         ttk.Entry(row2, textvariable=self.target_cwd_var).pack(side="left", fill="x", expand=True, padx=8)
-        ttk.Button(row2, text="Browse", command=self.browse_target_cwd).pack(side="left")
+        ttk.Button(row2, text="Browse", command=self.browse_target_cwd, style="Secondary.TButton").pack(side="left")
 
         row3 = ttk.Frame(options)
         row3.pack(fill="x")
         ttk.Label(row3, text="Workspace root").pack(side="left")
         ttk.Entry(row3, textvariable=self.workspace_root_var).pack(side="left", fill="x", expand=True, padx=8)
-        ttk.Button(row3, text="Browse", command=self.browse_workspace_root).pack(side="left", padx=(0, 8))
-        ttk.Button(row3, text="Dry run", command=self.import_dry_run).pack(side="left", padx=(0, 8))
-        ttk.Button(row3, text="Import", command=self.import_package).pack(side="left")
+        ttk.Button(row3, text="Browse", command=self.browse_workspace_root, style="Secondary.TButton").pack(side="left", padx=(0, 8))
+        ttk.Button(row3, text="Dry run", command=self.import_dry_run, style="Secondary.TButton").pack(side="left", padx=(0, 8))
+        ttk.Button(row3, text="Import", command=self.import_package, style="Primary.TButton").pack(side="left")
 
-        self.import_log = tk.Text(self.import_tab, height=8, wrap="word")
-        self.import_log.pack(fill="x", pady=(10, 0))
+        self.import_log = tk.Text(self.import_tab, height=6, wrap="word", bg="#0f172a", fg="#dbeafe", insertbackground="#dbeafe", relief="flat", padx=10, pady=8)
+        self.import_log.pack(fill="x", padx=12, pady=(10, 10))
         self.import_log.configure(state="disabled")
 
     def browse_codex_home(self) -> None:
@@ -317,7 +392,7 @@ class CodexHistoryTransferApp(tk.Tk):
     def _fill_thread_table(self, rows: list[dict[str, Any]]) -> None:
         self.threads = {str(row["id"]): row for row in rows}
         self.thread_tree.delete(*self.thread_tree.get_children())
-        for row in rows:
+        for index, row in enumerate(rows):
             thread_id = str(row["id"])
             values = (
                 cht.format_time(row.get("updated_at")),
@@ -326,8 +401,9 @@ class CodexHistoryTransferApp(tk.Tk):
                 cht.truncate(cht.strip_extended_prefix(row.get("cwd")) or "", 80),
                 thread_id,
             )
-            self.thread_tree.insert("", "end", iid=thread_id, values=values)
+            self.thread_tree.insert("", "end", iid=thread_id, values=values, tags=("even" if index % 2 == 0 else "odd",))
         self.selected_thread_id = None
+        self.export_summary_var.set(f"Loaded {len(rows)} conversation(s). Select one to inspect and export.")
         self.set_text(self.thread_details, "Select a thread to see details.")
 
     def on_thread_select(self, _event: tk.Event | None = None) -> None:
@@ -349,6 +425,9 @@ class CodexHistoryTransferApp(tk.Tk):
             str(thread.get("preview") or ""),
         ]
         self.set_text(self.thread_details, "\n".join(detail))
+        self.export_summary_var.set(
+            f"Selected: {cht.truncate(thread.get('title') or thread.get('preview') or '(untitled)', 120)}"
+        )
         if not self.export_path_var.get().strip():
             self.export_path_var.set(str(self.default_export_name()))
 
@@ -416,11 +495,20 @@ class CodexHistoryTransferApp(tk.Tk):
         self.set_text(self.package_info, "\n".join(info))
         self.package_tree.delete(*self.package_tree.get_children())
         for idx, entry in enumerate(entries[:1000]):
-            self.package_tree.insert("", "end", iid=str(idx), values=(entry.filename, f"{entry.file_size:,}"))
+            self.package_tree.insert(
+                "",
+                "end",
+                iid=str(idx),
+                values=(entry.filename, f"{entry.file_size:,}"),
+                tags=("even" if idx % 2 == 0 else "odd",),
+            )
         if len(entries) > 1000:
             self.package_tree.insert("", "end", values=(f"... {len(entries) - 1000} more entries", ""))
 
-        manifest = data["manifest"]
+        self.import_summary_var.set(
+            f"Package loaded: {cht.truncate(data['title'], 110)} · "
+            f"{data['workspace_files']} workspace file(s) · provider {data['provider'] or 'unknown'}"
+        )
         if data["workspace_included"] and not self.workspace_root_var.get().strip():
             self.workspace_root_var.set(str(Path.home() / "Documents" / "CodexImported"))
         if not self.target_cwd_var.get().strip() and not data["workspace_included"]:
@@ -473,6 +561,8 @@ class CodexHistoryTransferApp(tk.Tk):
         self.run_task(task)
 
     def run_task(self, task: Callable[[], tuple[str, str]]) -> None:
+        self.status_var.set("Working...")
+
         def worker() -> None:
             try:
                 target, message = task()
@@ -487,11 +577,14 @@ class CodexHistoryTransferApp(tk.Tk):
             while True:
                 target, message, error = self.task_queue.get_nowait()
                 if error:
+                    self.status_var.set("Error")
                     messagebox.showerror("codex-history-transfer", error)
                     self.append_log(self.export_log if self.notebook.index("current") == 0 else self.import_log, error)
                 elif target == "export":
+                    self.status_var.set("Ready")
                     self.append_log(self.export_log, message)
                 elif target == "import":
+                    self.status_var.set("Ready")
                     self.append_log(self.import_log, message)
         except queue.Empty:
             pass
@@ -516,6 +609,7 @@ class CodexHistoryTransferApp(tk.Tk):
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Launch the codex-history-transfer GUI.")
+    parser.add_argument("--version", action="version", version=f"codex-history-transfer-gui {cht.__version__}")
     parser.add_argument("--smoke-test", action="store_true", help="Import GUI dependencies and exit.")
     args = parser.parse_args()
     if args.smoke_test:
