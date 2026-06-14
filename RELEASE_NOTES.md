@@ -1,18 +1,17 @@
-# codex-history-transfer 1.0.1
+# codex-history-transfer 1.0.2
 
-Windows-first release with a visual workflow for moving Codex Desktop history between machines.
+Windows-first maintenance release for the visual Codex Desktop history transfer workflow.
 
 ## Highlights
 
-- Added a Tkinter desktop GUI.
-- The Export tab can search local Codex conversations and create transfer zip packages.
-- The Import tab can open a transfer zip, preview thread metadata and package entries, run a dry-run, and then import.
-- Added Windows launcher and PyInstaller-friendly entry points.
-- Added shared version reporting for CLI and GUI.
+- Fixed the GUI layout so Export and Import action buttons remain visible in smaller windows.
+- Reduced the default and minimum window sizes.
+- Moved Export and Import action controls above the resizable table/preview areas.
+- Replaced non-ASCII separator glyphs in visible UI text with ASCII-safe separators.
 
 ## Assets
 
-- `codex-history-transfer-1.0.1-windows.zip`: portable Windows package with GUI and CLI executables.
+- `codex-history-transfer-1.0.2-windows.zip`: portable Windows package with GUI and CLI executables.
 - `Source code`: GitHub-generated source archive.
 
 ## Notes

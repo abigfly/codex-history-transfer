@@ -1,4 +1,4 @@
-codex-history-transfer 1.0.1 for Windows
+codex-history-transfer 1.0.2 for Windows
 
 This is a portable Windows package. It does not install anything globally.
 

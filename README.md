@@ -2,7 +2,7 @@
 
 `codex-history-transfer` is a small offline tool for moving local Codex Desktop conversations between computers.
 
-Current version: `1.0.1`.
+Current version: `1.0.2`.
 
 It packages one Codex thread as a zip file, then imports it on another machine by restoring:
 
@@ -41,7 +41,7 @@ No third-party Python packages are required.
 
 ## Windows Release
 
-For Windows users who do not want to run from source, download the latest `codex-history-transfer-1.0.1-windows.zip` from:
+For Windows users who do not want to run from source, download the latest `codex-history-transfer-1.0.2-windows.zip` from:
 
 ```text
 https://github.com/abigfly/codex-history-transfer/releases

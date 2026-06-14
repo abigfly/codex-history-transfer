@@ -22,7 +22,7 @@ from typing import Any
 
 
 APP_NAME = "codex-history-transfer"
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 MANIFEST_SCHEMA = "codex-history-transfer"
 MANIFEST_VERSION = 1
 
